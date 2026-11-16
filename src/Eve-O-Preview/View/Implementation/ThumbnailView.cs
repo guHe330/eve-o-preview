@@ -34,6 +34,7 @@ namespace EveOPreview.View
 
 		private bool _isLocationChanged;
 		private bool _isSizeChanged;
+		private bool _isUserResizing;
 
 		private bool _isCustomMouseModeActive;
 
@@ -584,7 +585,26 @@ namespace EveOPreview.View
 
 			this._isSizeChanged = true;
 
+			// Windows also resizes this window on its own (creation, DPI, show/hide). Only a resize
+			// the user is dragging may become the size of ALL thumbnails and be saved.
+			if (!this._isUserResizing)
+			{
+				return;
+			}
+
 			this.ThumbnailResized?.Invoke(this.Id);
+		}
+
+		protected override void OnResizeBegin(EventArgs e)
+		{
+			this._isUserResizing = true;
+			base.OnResizeBegin(e);
+		}
+
+		protected override void OnResizeEnd(EventArgs e)
+		{
+			base.OnResizeEnd(e);
+			this._isUserResizing = false;
 		}
 
 		private void MouseEnter_Handler(object sender, EventArgs e)
@@ -684,7 +704,9 @@ namespace EveOPreview.View
                 // Right button only trigger thumbnail movement
                 if (leftButton && rightButton)
                 {
+                    this._isUserResizing = true;
                     this.Size = new Size(this.Size.Width + offsetX, this.Size.Height + offsetY);
+                    this._isUserResizing = false;
                     this._baseZoomSize = this.Size;
                 }
                 else
